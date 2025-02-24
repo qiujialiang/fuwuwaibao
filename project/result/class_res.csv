@@ -1,0 +1,2 @@
+ImageId,probability_label,predict_label
+0fb30b22c.jpg,[0.50186723 0.01571138 0.6696764  0.29321837],[False False  True False]
