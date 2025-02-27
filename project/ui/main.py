@@ -16,9 +16,9 @@ from datetime import datetime
 
 warnings.filterwarnings('ignore')
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-path_class = r"models\class\model_class_final 0.85.pth"
+path_class = r"fuwuwaibao\models\class\model_class_final 0.85.pth"
 model_class = torch.load(path_class, map_location=device)
-path_seg = r"models\seg\model_FPN_final 0.899.pth"
+path_seg = r"fuwuwaibao\models\seg\model_FPN_final 0.899.pth"
 model_seg = torch.load(path_seg,map_location=device)
 
 class Ui_MainWindow(object):

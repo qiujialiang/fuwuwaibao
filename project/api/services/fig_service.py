@@ -1,5 +1,5 @@
 from models.fig_model import FigModel
-from sqlalchemy import Select,asc
+from sqlalchemy import Select
 from resources import db
 
 class FigService:
@@ -11,12 +11,9 @@ class FigService:
         if exist_fig:
             self.update_fig(fig_model)
         else:
-            # fig_model.Res_class=str(fig_model.Res_class[0])
-            # fig_model.Res_seg=str(fig_model.Res_seg[0])
             db.session.add(fig_model)
             db.session.commit()
             return fig_model
-    
     def update_fig(self,fig_model:FigModel):
         exist_fig=self.get_fig_by_name(fig_model.Name)
         if not exist_fig:

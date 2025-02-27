@@ -5,12 +5,23 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(os.path.dirname(current_dir))
 sys.path.insert(0, parent_dir)
 
-from flask_restful import Resource
+from flask_restx import Resource,Namespace
 from api.common.constant import LOGIN_SECRET
 from api.resources import api
 from services.user_service import UserService
 from flask import request
 import jwt
+
+api = Namespace('user', description='User operations')
+
+@api.route('/get_all_users')
+class User(Resource):
+    def get(self):
+        return [
+        {'id': 1, 'username': 'Qiu', 'password': '123123'}
+    ]
+    
+@api.route('/login')
 class LoginResource(Resource):
     @api.doc(responses={200: 'Success', 400: 'Validation Error'}, params={'user': '用户登录'})
     def post(self):
@@ -26,6 +37,7 @@ class LoginResource(Resource):
                 return user_json
             else:
                 return {'error': 'error'}
+@api.route('/register')
 class RegisterResource(Resource):
     @api.doc(responses={200: 'Success', 400: 'Validation Error'}, params={'user': '注册用户，返回token'})
     def post(self):
@@ -42,5 +54,3 @@ class RegisterResource(Resource):
                 return user_json
             else:
                 return {'error': 'error'}
-api.add_resource(LoginResource,'/login')
-api.add_resource(RegisterResource,'/register')

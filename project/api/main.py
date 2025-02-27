@@ -1,10 +1,14 @@
+import warnings
 from flask import Flask
 from flask_restx import Api
-from resources import api as rest_api
+from resources.fig_resources import api as fig_api
+from resources.user_resources import api as user_api
+from resources import app,api
 
-app = Flask(__name__)
-api = Api(app, version='1.0', title='API Documentation',
-          description='项目的Api接口文档')
-api.add_namespace(rest_api)
+warnings.filterwarnings('ignore')
+
+api.add_namespace(user_api)
+api.add_namespace(fig_api)
+
 if __name__=="__main__":
     app.run(debug=True,port=5000)
