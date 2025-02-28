@@ -14,12 +14,22 @@ from PyQt6.QtWidgets import QApplication,QFileDialog
 from PyQt6.QtGui import QStandardItem
 from datetime import datetime
 
+import mysql.connector
+db_config={
+    'host': 'localhost',
+    'user': 'root',
+    'password': '12345',
+    'database': 'project'
+}
+
 warnings.filterwarnings('ignore')
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 path_class = r"models\class\model_class_final 0.85.pth"
 model_class = torch.load(path_class, map_location=device)
 path_seg = r"models\seg\model_FPN_final 0.899.pth"
 model_seg = torch.load(path_seg,map_location=device)
+
+
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -126,7 +136,8 @@ class Ui_MainWindow(object):
         self.model.setHorizontalHeaderLabels(['名称','时间','缺陷数目','用时','保存路径'])
         self.tableView.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
         self.tableView.setModel(self.model)
-
+        self.tableView.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
+        
         self.row=0
 
     def retranslateUi(self, MainWindow):
@@ -153,16 +164,65 @@ class Ui_MainWindow(object):
         self.toolButton_folder.clicked.connect(lambda:self.select_image(mode=1))
         self.toolButton_video.clicked.connect(lambda:self.select_image(mode=2))
         self.pushButton_run.clicked.connect(lambda:self.check(fig_path=self.fig_path,mode=self.mode))
+        self.tableView.doubleClicked.connect(self.showItem)
+
     
-    def check(self,fig_path=None,mode=None):
+    
+    def showItem(self,index):
+        name=index.data()
+        conn=mysql.connector.connect(**db_config)
+        cursor=conn.cursor()
+        query="SELECT * FROM res WHERE name = %s"
+        cursor.execute(query,(name,))
+        result=cursor.fetchone()
+        if result:
+            self.fig_data=result[2]
+            self.labels=result[5]
+            self.probability=result[7]
+            
+            pixmap=QtGui.QPixmap()
+            pixmap.loadFromData(self.fig_data)
+            self.reslabel.setPixmap(pixmap)
+            self.reslabel.setScaledContents(True)
+            self.label_11.setText(self.labels)
+            self.label_10.setText(self.probability)
+        else: 
+            print("error")
+        cursor.close()
+        conn.close()
+    def save(self):
+        conn=mysql.connector.connect(**db_config)
+        cursor=conn.cursor()
+        insert_query = """
+            INSERT INTO res (name, raw_fig, res_fig, datetime, time, class, num, dice)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            """    
+        data = (
+                self.name,
+                self.raw_data,
+                self.fig_data,
+                self.now,
+                self.time,
+                self.labels,
+                self.num,
+                self.probability  # 假设 dice 是一个字符串
+            )
+        cursor.execute(insert_query, data)
+        conn.commit()
+        cursor.close()
+        conn.close()
+    def check(self,fig_path,mode=None):
         if fig_path==None or mode==None:
             pass
         if mode==0:
             probability_label,df_segmentation,time=predict(path=Path(fig_path),mode=0,model_class=model_class,model_seg=model_seg)
-            fig_data=eda(df=df_segmentation,path=fig_path)
+            with open(fig_path,'rb') as f:
+                self.raw_data=f.read()
+                
+            self.fig_data=eda(df=df_segmentation,path=fig_path)
             
             pixmap=QtGui.QPixmap()
-            pixmap.loadFromData(fig_data)
+            pixmap.loadFromData(self.fig_data)
             self.reslabel.setPixmap(pixmap)
             self.reslabel.setScaledContents(True)
             
@@ -172,33 +232,36 @@ class Ui_MainWindow(object):
             self.now=datetime.now()
             self.filltable()
             
-            probability=str(probability_label.iloc[0,1])
-            labels=str(probability_label.iloc[0,2])
-            self.label_10.setText(probability)
-            self.label_11.setText(labels)
+            self.probability=', '.join(probability_label['probability_label'].astype(str))
+            self.labels = ', '.join(df_segmentation['EncodedPixels']!=''.astype(str))
+            self.label_10.setText(self.probability)
+            self.label_11.setText(self.labels)
+            
+            self.save()
             
         elif mode==1:
-            probability_label,df_segmentation,time=predict(path=Path(fig_path),mode=1,model_class=model_class,model_seg=model_seg)
-            
+            image_extensions = ('.png', '.xpm', '.jpg', '.jpeg')
+            for file_name in os.listdir(fig_path):
+                if file_name.lower().endswith(image_extensions):
+                    self.name=file_name
+                    image_path = os.path.join(fig_path, file_name)
+                    self.check(fig_path=image_path,mode=0)
         elif mode==2:
             pass
     
     def filltable(self):
         name=self.name
         time=self.time
-        # res=self.res
         num=self.num
         now=self.now
         
         item1=QStandardItem(str(name))
         item2=QStandardItem(str(time))
-        # item3=QStandardItem(str(res))
         item4=QStandardItem(str(num))
         item5=QStandardItem(str(now))
         
         self.model.setItem(self.row,0,item1)
         self.model.setItem(self.row,2,item4)
-        # self.model.setItem(self.row,2,item3)
         self.model.setItem(self.row,1,item5)
         self.model.setItem(self.row,3,item2)
         
@@ -220,7 +283,7 @@ class Ui_MainWindow(object):
             if file_path:
                 self.fig_path=file_path
                 self.name=os.path.basename(file_path)
-                self.label_3.setText(self.name)
+                self.label_3.setText(self.name)      
             else:
                 print("文件路径错误")
         elif mode==2:
@@ -231,9 +294,17 @@ class Ui_MainWindow(object):
                 self.label_4.setText(self.name)
             else:
                 print("文件路径错误")
-            
+
+def clear_database():
+    conn=mysql.connector.connect(**db_config)
+    cursor=conn.cursor()
+    cursor.execute("DELETE FROM res")
+    conn.commit()
+    cursor.close()
+    conn.close()        
     
 def main():
+    clear_database()
     app = QApplication(sys.argv)
     MainWindow = QtWidgets.QMainWindow()  # 创建QMainWindow实例
     ui = Ui_MainWindow()  # 创建Ui_MainWindow实例
