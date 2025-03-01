@@ -3,3 +3,4 @@
 /sub/
 *.pyc
 *.pth
+**/*.pth

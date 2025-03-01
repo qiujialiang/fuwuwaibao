@@ -13,6 +13,7 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 from PyQt6.QtWidgets import QApplication,QFileDialog
 from PyQt6.QtGui import QStandardItem
 from datetime import datetime
+import cv2
 
 import mysql.connector
 db_config={
@@ -28,7 +29,6 @@ path_class = r"models\class\model_class_final 0.85.pth"
 model_class = torch.load(path_class, map_location=device)
 path_seg = r"models\seg\model_FPN_final 0.899.pth"
 model_seg = torch.load(path_seg,map_location=device)
-
 
 
 class Ui_MainWindow(object):
@@ -167,7 +167,9 @@ class Ui_MainWindow(object):
         self.tableView.doubleClicked.connect(self.showItem)
 
     
-    
+    def process_video(self,video_path):
+        cap=cv2.VideoCapture(video_path)
+        
     def showItem(self,index):
         name=index.data()
         conn=mysql.connector.connect(**db_config)
@@ -247,7 +249,7 @@ class Ui_MainWindow(object):
                     image_path = os.path.join(fig_path, file_name)
                     self.check(fig_path=image_path,mode=0)
         elif mode==2:
-            pass
+            self.process_video(self,video_path=fig_path)
     
     def filltable(self):
         name=self.name
