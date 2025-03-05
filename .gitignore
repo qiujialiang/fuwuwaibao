@@ -1,6 +1,4 @@
-/data/
-/models/
-/sub/
-*.pyc
-*.pth
+data/
+**/*.pyc
 **/*.pth
+**/*.mp4
