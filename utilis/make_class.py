@@ -4,12 +4,15 @@ import pandas as pd
 import torch
 from tqdm import tqdm
 
+
 def sharpen(p,t=0.5):
         if t!=0:
             return p**t
         else:
             return p
-def get_classification_preds(model,test_loader,threshold_label = [0.6,0.6,0.6,0.6]):
+
+
+def get_classification_preds(model, test_loader, threshold_label = [0.6, 0.6, 0.6, 0.6]):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
     model.eval() 
@@ -44,6 +47,6 @@ def get_classification_preds(model,test_loader,threshold_label = [0.6,0.6,0.6,0.
                 rle = '1 1'
             encoded_pixel.append(rle)
     probability_label = pd.DataFrame(zip(test_id, test_probability_label,predict_label), columns=['ImageId', 'probability_label','predict_label'])
-    probability_label.to_csv(r"result\class_res.csv", index=False)
+    # probability_label.to_csv(r"result\class_res.csv", index=False)
     df_label = pd.DataFrame(zip(image_id_class_id, encoded_pixel), columns=['ImageId_ClassId', 'EncodedPixels'])
     return probability_label,df_label,time_class

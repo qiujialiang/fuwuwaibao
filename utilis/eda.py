@@ -9,6 +9,7 @@ from PIL import Image
 import cv2
 plt.ioff()
 
+
 def name_and_mask(df):
     img_names = [str(i).split('_')[0] for i in df.iloc[0:4, 0].values]
     labels = df.iloc[0:4, 1]
@@ -25,13 +26,23 @@ def name_and_mask(df):
                 mask_label[p-1:p+l-1] = 1
             mask[:, :, idx] = mask_label.reshape(256, 1600, order='F')
     return img_names[0], mask
+
+
 def eda(df,data=None,path=None):
-    df['ImageId']=df['ImageId_ClassId'].apply(lambda x:x.split('_')[0])
-    df['ClassId']=df['ImageId_ClassId'].apply(lambda x:x.split('_')[1])
-    df['hashMask']=~df['EncodedPixels'].isnull()
-    mask_count_df=df.groupby('ImageId').agg(np.sum).reset_index()
+    """Exploratory data analysis
+    Args:
+        df: Segmentation DataFrame
+        data: Figure binary data
+        path: Path of raw figure
+    Return:
+        binary_data: Binary data of result figure
+    """
+    df['ImageId'] = df['ImageId_ClassId'].apply(lambda x:x.split('_')[0])
+    df['ClassId'] = df['ImageId_ClassId'].apply(lambda x:x.split('_')[1])
+    df['hashMask'] = ~df['EncodedPixels'].isnull()
+    mask_count_df = df.groupby('ImageId').agg(np.sum).reset_index()
     mask_count_df.sort_values('hashMask',ascending=False,inplace=True)
-    palet=[(249,192,12),(0,185,241),(114,0,218),(249,50,12)]
+    palet=[(249, 192, 12), (0, 185, 241), (114, 0, 218), (249, 50, 12)]
 
     name,mask=name_and_mask(df)
     if data is not None:

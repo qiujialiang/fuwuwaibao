@@ -29,7 +29,9 @@ class DatabaseHelper:
         INSERT INTO res (name, raw_fig, res_fig, date, time, label, num, dice)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         """
-        self.cursor.execute(insert_query, result)
+        # Unpack result properties into a tuple
+        result_data = (result.name, result.raw_fig, result.res_fig, result.date, result.time, result.label, result.num, result.dice)
+        self.cursor.execute(insert_query, result_data)
         self.conn.commit()
 
     def init_database(self):
@@ -49,8 +51,8 @@ class DatabaseHelper:
                 `date` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 `time` VARCHAR(255) NOT NULL,
                 `label` VARCHAR(255) NOT NULL,
-                `num` INT NOT NULL,
-                `dice` FLOAT NOT NULL
+                `num` VARCHAR(255) NOT NULL,
+                `dice` VARCHAR(255) NOT NULL
             )
             """
             self.cursor.execute(create_table_query)
@@ -71,6 +73,7 @@ class DatabaseHelper:
             self.conn.close()
             print("数据库连接已关闭")
 
+
 class DetectResult:
     def __init__(self, name, raw_fig, res_fig, date, time, label, num, dice):
         self.name = name
@@ -82,3 +85,9 @@ class DetectResult:
         self.num = num
         self.dice = dice
 
+
+class DetectObj:
+    def __init__(self, name, figure, path=None):
+        self.name = name
+        self.figure = figure
+        self.path = path

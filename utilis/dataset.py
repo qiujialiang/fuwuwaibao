@@ -114,3 +114,43 @@ def make_dataloader(test_data_folder,image_data,mode,name,batch_size,):
             shuffle=False,
         )
         return testset
+
+
+import torch
+import numpy as np
+from io import BytesIO
+from PIL import Image
+from albumentations import Normalize, Compose
+from albumentations.pytorch import ToTensorV2
+from torch.utils.data import Dataset, DataLoader
+
+def pack_binary_images(image_bytes_list, batch_size=1):
+    """
+    将二进制图片列表转换为 PyTorch DataLoader
+
+    :param image_bytes_list: List[bytes]，包含多个二进制图片
+    :param batch_size: DataLoader 的 batch_size
+    :return: PyTorch DataLoader
+    """
+    class BinaryImageDataset(Dataset):
+        def __init__(self, image_bytes_list, mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)):
+            self.image_bytes_list = image_bytes_list
+            self.transform = Compose([
+                Normalize(mean=mean, std=std, p=1),
+                ToTensorV2(),
+            ])
+
+        def __len__(self):
+            return len(self.image_bytes_list)
+
+        def __getitem__(self, idx):
+            img_bytes = self.image_bytes_list[idx]
+            image = Image.open(BytesIO(img_bytes)).convert("RGB")  # 读取二进制数据并转换为RGB
+            image = np.array(image)  # 转换为NumPy数组
+            image_tensor = self.transform(image=image)["image"]  # 归一化 + 转Tensor
+            return image_tensor
+
+    dataset = BinaryImageDataset(image_bytes_list)
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
+    return dataloader
+
